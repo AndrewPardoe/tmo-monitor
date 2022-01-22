@@ -190,7 +190,7 @@ class Configuration:
     self.login = dict([('username', 'admin'), ('password', '')])
     self.ping = dict([('interface', ''), ('ping_host', 'google.com'), ('ping_count', 1), ('ping_interval', 10)])
     self.connection = dict([('primary_band', None), ('secondary_band', ['n41']), ('enbid', None), ('uptime', '')])
-    self.reboot = dict([('uptime', 90), ('ping', True), ('4G_band', True), ('5G_band', True), ('enbid', True)])
+    self.reboot = dict([('uptime', 90), ('reboot_pause', 0), ('ping', True), ('4G_band', True), ('5G_band', True), ('enbid', True)])
     self.general = dict([('print_config', False), ('logfile', ''), ('log_all', False), ('log_delta', False)])
 
     # Command line arguments override defaults & .env file
@@ -233,9 +233,11 @@ class Configuration:
     tmp = os.environ.get('tmo_enbid')
     if tmp != None:
       self.connection['enbid'] = tmp
-    tmp = os.environ.get('tmo_min_uptime')
-    if tmp != None:
-      self.reboot['uptime'] = tmp
+
+    for var in {'min_uptime', 'reboot_pause'}:
+      tmp = os.environ.get('tmo_' + var)
+      if tmp != None:
+        self.reboot[var] = tmp
 
     # Default all reboot options to true, .env file can override to false
     for var in {'ping', '4G_band', '5G_band', 'enbid'}:
@@ -281,6 +283,7 @@ class Configuration:
     self.parser.add_argument('--skip-ping', action='store_true', help='skip check for successful ping')
     self.parser.add_argument('--skip-enbid', action='store_true', help='skip check for connected eNB ID')
     self.parser.add_argument('--uptime', type=int, default=self.reboot['uptime'], help='how long the gateway must be up before considering a reboot (defaults to 90 seconds)')
+    self.parser.add_argument('--reboot-pause', type=int, default=self.reboot['reboot_pause'], help='pause after initiating a reboot (defaults to 0 seconds)')
     # connection configuration
     self.parser.add_argument('-4', '--4g-band', type=str, action='append', dest='primary_band', default=None, choices=['B2', 'B4', 'B5', 'B12', 'B13', 'B25', 'B26', 'B41', 'B46', 'B48', 'B66', 'B71'], help='the 4g band(s) to check')
     self.parser.add_argument('-5', '--5g-band', type=str, action='append', dest='secondary_band', default=None, choices=['n41', 'n71'], help='the 5g band(s) to check (defaults to n41)')
@@ -310,8 +313,9 @@ class Configuration:
       tmp = getattr(args, var)
       self.general[var] = tmp
 
-    if args.uptime != None:
-      self.reboot['uptime'] = args.uptime
+    for var in {'uptime', 'reboot_pause'}:
+      tmp = getattr(args, var)
+      self.reboot[var] = tmp
 
     # At this point in the script self.reboot[*] defaults to True unless overridden in .env file
 
@@ -355,6 +359,7 @@ class Configuration:
     print("    Reboot now: " + str(self.reboot_now))
     print("    Skip reboot: " + str(self.skip_reboot))
     (print("    Min uptime: " + str(self.reboot.get('uptime'))) if self.reboot.get('uptime') else '')
+    (print("    Reboot pause: " + str(self.reboot.get('reboot_pause'))) if self.reboot.get('reboot_pause') else '')
     print("  Reboot on: " + ("ping " if self.reboot['ping'] else '') + ("4G_band " if self.reboot['4G_band'] else '')
       + ("5G_band " if self.reboot['5G_band'] else '') + ("eNB_ID" if self.reboot['enbid'] else ''))
     print("  General settings:")
@@ -445,6 +450,9 @@ if __name__ == "__main__":
       if config.reboot_now or (connection['uptime'] >= config.reboot['uptime']):
         print_and_log('Rebooting.')
         tc_control.reboot()
+        if config.reboot['reboot_pause'] > 0:
+          print_and_log('Sleeping for {0} sec'.format( config.reboot['reboot_pause']))
+          time.sleep(config.reboot['reboot_pause']) 
       else:
         print_and_log('Uptime threshold not met for reboot.')
   else:

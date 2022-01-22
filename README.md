@@ -21,7 +21,7 @@ usage: tmo-monitor.py [-h] [-I INTERFACE] [-H PING_HOST]
                       [--ping-count PING_COUNT]
                       [--ping-interval PING_INTERVAL] [-R] [-r] [--skip-bands]
                       [--skip-5g-bands] [--skip-ping] [--skip-enbid]
-                      [--uptime UPTIME]
+                      [--uptime UPTIME] [--reboot-pause SEC]
                       [-4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}]
                       [-5 {n41,n71}] [--enbid ENBID] [--logfile LOGFILE]
                       [--log-all] [--log-delta]
@@ -53,6 +53,7 @@ optional arguments:
   --skip-enbid          skip check for connected eNB ID
   --uptime UPTIME       how long the gateway must be up before considering a
                         reboot (defaults to 90 seconds)
+  --reboot-pause SEC    pause after initiating a reboot (defaults to 0 seconds)
   -4 {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}, --4g-band {B2,B4,B5,B12,B13,B25,B26,B41,B46,B48,B66,B71}
                         the 4g band(s) to check
   -5 {n41,n71}, --5g-band {n41,n71}
@@ -97,6 +98,10 @@ optional arguments:
 
 **Uptime Threshold:** `--uptime`
     Defaults to 90 seconds - Specify a required uptime for an implicit reboot to occur. Intended to allow sufficient time to establish a connection and stabilize band selection. Setting is used to avoid boot looping, but is not respected when the `--reboot` flag is used.
+
+**Reboot pause:** `--reboot-pause`
+    Defaults to 0 seconds - Specify an amount of time for the script to sleep after initiating a reboot. Intended to prevent a job that calls the script in a timed loop from starting a new reboot monitor cycle while modem is rebooting.
+
 
 ### Connection configuration
 **4G Band Checking:** `-4 --4g-band`
