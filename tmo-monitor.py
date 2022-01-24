@@ -450,6 +450,7 @@ if __name__ == "__main__":
       if config.reboot_now or (connection['uptime'] >= config.reboot['uptime']):
         print_and_log('Rebooting.')
         tc_control.reboot()
+        log_all = False # logging logic can't read status from rebooting modem
         if config.reboot['reboot_pause'] > 0:
           print_and_log('Sleeping for {0} sec'.format( config.reboot['reboot_pause']))
           time.sleep(config.reboot['reboot_pause']) 
